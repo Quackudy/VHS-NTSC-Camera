@@ -1,9 +1,9 @@
-# VHS Android integration proof
+# VHS Camera
 
-Milestone-1 integration tests: a native Kotlin app calls the **real ntsc-rs
-effect engine** through Rust/JNI. It imports presets, images and videos
-using Android's file picker. It compares source/processed images, measures ten
-frames, saves PNGs, and exports processed H.264 MP4 video with compatible audio.
+A personal Kotlin camera app using the **real ntsc-rs effect engine** through
+Rust/JNI. It records camera video with audio and a live effect preview, imports
+presets through Android's file picker, and saves originals and processed H.264
+MP4s to Gallery. Developer mode retains the image/video integration tools.
 Processing stays on the phone. There is no network or broad storage permission.
 The camera screen uses Camera and Microphone runtime permissions.
 
@@ -20,6 +20,42 @@ Version **0.5.1** fixes **Process last clip** when Android restores the camera
 as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
+
+## Camera controls (0.6)
+
+Version 0.6 opens directly into the camera. The large red button starts/stops
+recording; **Pause** changes to **Resume**, continuing in the same MP4. The timer
+freezes while paused, and the paused interval is omitted from saved audio/video.
+The live viewfinder remains active while paused. **Stop** also saves a paused
+recording. Leaving the app finalizes the video; pause does not support background
+recording or resuming a video after closing the app.
+
+To set the starting zoom, select a lens in **Settings**, return to the viewfinder,
+and adjust W/T or pinch. Open **Settings** again and tap **Set … as default**.
+The value is remembered separately for each exposed lens and clamped to its
+supported crop range when loaded. Starting the camera or switching to that lens
+applies the saved default. This is crop zoom; the app never changes lenses to
+implement zoom. Normal rotation preserves the current lens/zoom and last clip.
+
+**Settings** contains lens selection, preset import, live preview, stabilization,
+starting zoom and zoom speed. **Developer mode** opens the former image benchmark
+and video-processing screen. Normal camera exports show a smaller progress/save
+screen; returning from it reopens the camera. Originals still save immediately
+to Gallery Movies/VHS; use **Process last clip** to save a separate VHS copy.
+The previous recording remains accessible after restarting the app unless it
+has been removed from Gallery.
+
+Build/install the same way as below. The launcher now opens `CameraActivity`;
+`MainActivity` is the private developer/export screen. The default synthetic
+instrumentation suite adds generated EGL-to-MediaRecorder pause/resume and
+stop-while-paused checks without opening the camera/microphone. Hardware
+`cameraRecord=true` now records ~4 seconds over ~6 seconds including a 2-second
+pause; invoke only after explicit user readiness.
+
+Verification pending: the phone disconnected before installing 0.6. Android
+build/lint, native tests, signing/alignment and host checks of zoom limits and
+the pause-aware timer passed. Synthetic phone tests, actual audio pause/resume,
+and portrait/landscape visual checks still need the connected A26.
 
 ## Live preview (0.5)
 
@@ -136,7 +172,7 @@ phone. Short automated checks do not establish long-session reliability.
    ```bash
    adb devices -l
    adb install -r app/build/outputs/apk/debug/app-debug.apk
-   adb shell am start -n dev.vhs.proof/.MainActivity
+   adb shell am start -n dev.vhs.proof/.CameraActivity
    ```
 
    If Linux USB permissions block access, install/configure your distribution's

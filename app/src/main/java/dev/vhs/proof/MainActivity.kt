@@ -48,7 +48,8 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val preferences = getSharedPreferences("vhs", MODE_PRIVATE)
-        preset = preferences.getString("preset", preset) ?: preset
+        preset = (if (intent.action == PROCESS_VIDEO) intent.getStringExtra("preset") else null)
+            ?: preferences.getString("preset", preset) ?: preset
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val padding = dp(16)
@@ -62,20 +63,26 @@ class MainActivity : Activity() {
         }
         setContentView(scroll)
         scroll.requestApplyInsets()
+        val developerPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = if (intent.action == PROCESS_VIDEO) View.GONE else View.VISIBLE
+            column.addView(this)
+        }
+        var section = developerPanel
         fun label(text: String, size: Float = 16f) = TextView(this).apply {
             this.text = text
             textSize = size
             setPadding(0, dp(8), 0, dp(8))
-            column.addView(this)
+            section.addView(this)
         }
-        label("VHS integration proof", 24f)
+        label("Developer mode", 24f)
         label("Camera and processing · all processing stays on this phone")
         presetLabel = label(if (preferences.contains("preset")) "Preset: remembered import" else "Preset: upstream legacy defaults (version 1)")
         fun button(text: String, action: () -> Unit) = Button(this).apply {
             this.text = text
             minHeight = dp(48)
             setOnClickListener { action() }
-            column.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+            section.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
             buttons.add(this)
         }
         button("Import ntsc-rs preset") { openDocument(IMPORT_PRESET, "*/*") }
@@ -91,13 +98,13 @@ class MainActivity : Activity() {
             setOnCheckedChangeListener { _, checked ->
                 image.setImageBitmap(if (checked) processed else source)
             }
-            column.addView(this)
+            section.addView(this)
         }
         image = ImageView(this).apply {
             adjustViewBounds = true
             scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = "Test image; switch between source and ntsc-rs result above"
-            column.addView(this, LinearLayout.LayoutParams(-1, -2))
+            section.addView(this, LinearLayout.LayoutParams(-1, -2))
         }
         status = label("Ready. Import a preset, or test the upstream legacy defaults.")
         status.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
@@ -108,10 +115,13 @@ class MainActivity : Activity() {
                 putExtra(Intent.EXTRA_TITLE, "vhs-test.png")
             }, SAVE_IMAGE)
         }.apply { isEnabled = false }
-        label("Video export", 20f)
-        label("SDR video with AAC audio or no audio. Exports save automatically to Gallery → Movies/VHS. " +
-            "Aspect ratio is preserved within 640 × 480. Keep this screen open until export finishes.")
+        section = column
+        label(if (intent.action == PROCESS_VIDEO) "Process recording" else "Video export", 20f)
+        label(if (intent.action == PROCESS_VIDEO) "Make a VHS copy of your recording. The original stays in Gallery. Keep this screen open until saving finishes." else
+            "SDR video with AAC audio or no audio. Exports save automatically to Gallery → Movies/VHS. " +
+                "Aspect ratio is preserved within 640 × 480. Keep this screen open until export finishes.")
         button("Choose and process video") { openDocument(IMPORT_VIDEO, "video/*") }
+            .visibility = if (intent.action == PROCESS_VIDEO) View.GONE else View.VISIBLE
         exportProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 1000; visibility = View.GONE
             contentDescription = "Video export progress"
@@ -136,6 +146,9 @@ class MainActivity : Activity() {
                 }
             }
         }.apply { isEnabled = false }
+        if (intent.action == PROCESS_VIDEO) {
+            button("Back to camera") { finish() }
+        }
         source = testPattern()
         image.setImageBitmap(source)
         if (savedInstanceState == null && intent.action == PROCESS_VIDEO) {
@@ -159,19 +172,7 @@ class MainActivity : Activity() {
         val uri = data?.data ?: return
         when (requestCode) {
             IMPORT_PRESET -> background("Reading preset…") {
-                val text = contentResolver.openInputStream(uri)?.use { stream ->
-                    val bytes = ByteArray(65537)
-                    var size = 0
-                    while (size < bytes.size) {
-                        val count = stream.read(bytes, size, bytes.size - size)
-                        if (count < 0) break
-                        size += count
-                    }
-                    require(size <= 65536) { "Preset exceeds 64 KiB" }
-                    String(bytes, 0, size, Charsets.UTF_8)
-                } ?: error("Cannot open preset")
-                Native.validatePreset(text)
-                val remembered = getSharedPreferences("vhs", MODE_PRIVATE).edit().putString("preset", text).commit()
+                val (text, remembered) = PresetStore.import(this, uri)
                 onUi {
                     preset = text
                     presetLabel.text = if (remembered) "Preset: imported and remembered" else "Preset: imported (could not remember selection)"
@@ -240,6 +241,7 @@ class MainActivity : Activity() {
                         (result.elapsedMs - (result.toRgbNs + result.effectNs + result.toYuvNs) / 1_000_000.0) / result.frames,
                         if (result.audioCopied) "AAC audio copied with original timestamps" else "Source has no audio track",
                         if (result.assumedColor) "Missing color metadata: assumed BT.601 / limited range where unspecified" else "Source color matrix and range read from decoder")
+                    if (intent.action == PROCESS_VIDEO) exportStatus.text = "VHS copy saved to Gallery → Movies/VHS.\nYour original is kept."
                 }
             } finally {
                 result.file.delete()

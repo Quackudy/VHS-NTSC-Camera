@@ -156,3 +156,28 @@ audio/video packet timestamps matched within 100us. Original 7412 SHA256 before
 and after: 5f0b00ca8c2749b3dc2cc37a81cdb2998dec5d47493c28b2e32a46fd1a494d0d.
 Kept both source and processed Gallery videos. Removed temporary test package
 for user 0 after testing. Long-session live-preview heat remains unverified.
+
+Version 0.6 (code 9), branch v0.6-camera-controls, changes the launcher to
+CameraActivity (dark platform Material theme), app label VHS Camera. MainActivity
+is now unexported developer/export UI; normal camera exports hide developer
+widgets and retain the camera underneath so Back returns to shooting. Settings
+holds lens, preset import via shared PresetStore, live preview, EIS/OIS,
+per-lens defaultZoom.<cameraId> (Float), global zoomSpeed, and Developer mode.
+Default zoom loads/clamps via CameraGeometry.startingZoom on initial lens setup
+and lens changes. Rotation saves current lens/zoom, live state and lastClip;
+last successful published original URI is remembered in private prefs.
+MediaRecorder.pause/resume keeps one file and original session; RecordingTime
+controls a pause-excluding UI timer. The camera/preview remain active while
+paused; leaving the Activity still finalizes the current original. Recorder
+pause/resume failure stops/finalizes with a visible error. Settings/gallery/lens
+changes are disabled during recording, including paused recording. Originals
+remain clean; live processed recording and background recording are deferred.
+Synthetic instrumentation adds EGL-generated video-only pause/resume and stopping
+while paused; it never activates camera/mic. cameraRecord=true now performs a
+~6-second wall-time recording with a 2-second pause (~4 seconds of footage),
+preceded by ~5 seconds of preview. Require fresh user readiness; current async
+readiness/connect questions have not yet been answered. The A26 disconnected
+before install. 0.6 build/lint, six native tests/clippy, signing/alignment and
+host JVM assertions for compiled startingZoom/RecordingTime passed. Device
+synthetic recorder tests, audio pause/resume and visual inspection are pending.
+Do not claim 0.6 installed or device-verified until those actually run.

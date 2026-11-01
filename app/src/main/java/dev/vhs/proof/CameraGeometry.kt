@@ -7,6 +7,11 @@ import kotlin.math.min
 import kotlin.math.pow
 
 internal object CameraGeometry {
+    fun startingZoom(saved: Double, maxZoom: Double): Double {
+        require(maxZoom.isFinite() && maxZoom >= 1)
+        return if (saved.isFinite()) saved.coerceIn(1.0, maxZoom) else 1.0
+    }
+
     fun maxCropZoom(active: Rect, advertised: Double): Double {
         val base = crop(active, 1.0)
         return (advertised * min(base.width().toDouble() / active.width(), base.height().toDouble() / active.height())).coerceAtLeast(1.0)
@@ -45,4 +50,18 @@ internal class ZoomMotion {
         zoom = (zoom * 2.0.pow(velocity * dt)).coerceIn(1.0, maxZoom)
         if (zoom == 1.0 && velocity < 0 || zoom == maxZoom && velocity > 0) velocity = 0.0
     }
+}
+
+/** UI duration excludes pauses; MediaRecorder owns the actual encoded timestamps. */
+internal class RecordingTime {
+    var paused = false
+        private set
+    private var started = 0L
+    private var pausedAt = 0L
+    private var pausedDuration = 0L
+
+    fun start(now: Long) { started = now; pausedDuration = 0; paused = false }
+    fun pause(now: Long) { check(!paused); pausedAt = now; paused = true }
+    fun resume(now: Long) { check(paused); pausedDuration += now - pausedAt; paused = false }
+    fun elapsed(now: Long) = ((if (paused) pausedAt else now) - started - pausedDuration).coerceAtLeast(0)
 }

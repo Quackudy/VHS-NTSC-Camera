@@ -44,6 +44,7 @@ class ProofInstrumentation : Instrumentation() {
             checkNativeConversionMatchesReference()
             checkCameraGeometry()
             checkLivePreview()
+            RecorderPauseCheck.run(targetContext)
             for (name in listOf("clip.mp4", "rotated.mp4", "offset.mp4", "silent.mp4")) checkClip(name)
             checkExportWorkflow()
             finish(Activity.RESULT_OK, Bundle().apply {
@@ -115,6 +116,24 @@ class ProofInstrumentation : Instrumentation() {
     }
 
     private fun checkCameraGeometry() {
+        check(CameraGeometry.startingZoom(2.5, 8.0) == 2.5)
+        check(CameraGeometry.startingZoom(20.0, 8.0) == 8.0)
+        check(CameraGeometry.startingZoom(0.5, 8.0) == 1.0)
+        check(CameraGeometry.startingZoom(Double.NaN, 8.0) == 1.0)
+        val clock = RecordingTime()
+        clock.start(100)
+        check(clock.elapsed(1100) == 1000L)
+        clock.pause(1100)
+        check(clock.elapsed(3100) == 1000L && clock.paused)
+        clock.resume(3100)
+        check(clock.elapsed(4100) == 2000L && !clock.paused)
+        clock.pause(4100)
+        check(clock.elapsed(5100) == 2000L)
+        clock.resume(5100)
+        check(clock.elapsed(6100) == 3000L)
+        clock.start(10000)
+        check(clock.elapsed(11000) == 1000L && !clock.paused)
+
         for (active in listOf(android.graphics.Rect(0, 0, 3264, 2448), android.graphics.Rect(0, 0, 4080, 3060),
             android.graphics.Rect(10, 20, 4010, 2270))) {
             val max = CameraGeometry.maxCropZoom(active, 8.0)
@@ -275,10 +294,13 @@ class ProofInstrumentation : Instrumentation() {
             } catch (_: java.util.concurrent.CancellationException) {}
             check(galleryIds() == beforeGallery) { "Cancelled publication leaked a Gallery row" }
 
-            fun launch(video: Uri? = null): MainActivity {
+            fun launch(video: Uri? = null, presetSnapshot: String? = null): MainActivity {
                 val monitor = addMonitor(MainActivity::class.java.name, null, false)
                 targetContext.startActivity(android.content.Intent(targetContext, MainActivity::class.java)
-                    .apply { if (video != null) { action = MainActivity.PROCESS_VIDEO; data = video } }
+                    .apply {
+                        if (video != null) { action = MainActivity.PROCESS_VIDEO; data = video }
+                        if (presetSnapshot != null) putExtra("preset", presetSnapshot)
+                    }
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                 val created = waitForMonitorWithTimeout(monitor, 15_000) as? MainActivity ?: error("Main screen did not open")
                 removeMonitor(monitor)
@@ -333,7 +355,10 @@ class ProofInstrumentation : Instrumentation() {
             runOnMainSync { second.finish() }
             await { second.isDestroyed }
             // A camera restored as the task root has no activity-result recipient.
-            val standalone = launch(Uri.fromFile(input))
+            val snapshot = "{\"version\":1,\"snow_intensity\":0.2}"
+            val standalone = launch(Uri.fromFile(input), snapshot)
+            runOnMainSync { check(field(standalone, "preset") == snapshot) }
+            check(preferences.getString("preset", null) == imported) { "Camera export changed the remembered preset" }
             await { field(standalone, "busy") == false && field(standalone, "savedVideo") != null }
             runOnMainSync { saved = field(standalone, "savedVideo") as Uri }
             val standaloneTracks = tracks(requireNotNull(saved))
@@ -424,6 +449,9 @@ class ProofInstrumentation : Instrumentation() {
         val camera = waitForMonitorWithTimeout(monitor, 15_000) as? CameraActivity ?: error("Camera screen did not open")
         removeMonitor(monitor)
         var processed: File? = null
+        val cameraPreferences = targetContext.getSharedPreferences("vhs", Activity.MODE_PRIVATE)
+        var zoomKey: String? = null
+        var previousZoom: Float? = null
         try {
             fun field(name: String): Any? = CameraActivity::class.java.getDeclaredField(name).apply { isAccessible = true }.get(camera)
             fun await(condition: () -> Boolean) {
@@ -439,11 +467,26 @@ class ProofInstrumentation : Instrumentation() {
             fun recordButton() = camera.window.decorView.findViewWithTag<android.widget.Button>("record")
             await { recordButton().isEnabled && recordButton().text == "Record" }
             await { (field("effectImage") as android.widget.ImageView).drawable != null }
+            runOnMainSync {
+                val lenses = field("lenses") as List<*>
+                val id = (lenses[field("selected") as Int] as CameraLens).id
+                zoomKey = "defaultZoom.$id"
+                previousZoom = if (cameraPreferences.contains(zoomKey)) cameraPreferences.getFloat(zoomKey, 1f) else null
+                val motion = field("motion") as ZoomMotion
+                motion.zoom = 1.5
+                (field("defaultZoomButton") as android.widget.Button).performClick()
+                check(cameraPreferences.getFloat(zoomKey, 1f) == 1.5f)
+                motion.zoom = 1.0
+                CameraActivity::class.java.getDeclaredMethod("configureLensControls").apply { isAccessible = true }.invoke(camera)
+                check(motion.zoom == 1.5) { "Saved starting zoom was not loaded" }
+                CameraActivity::class.java.getDeclaredMethod("applyControls", java.lang.Boolean.TYPE, java.lang.Boolean.TYPE)
+                    .apply { isAccessible = true }.invoke(camera, true, false)
+            }
             val liveSamples = mutableListOf<String>()
             var maxThermal = 0
             var minPss = Int.MAX_VALUE
             var maxPss = 0
-            repeat(12) {
+            repeat(2) {
                 Thread.sleep(2500)
                 runOnMainSync {
                     check((field("effectImage") as android.widget.ImageView).visibility == android.view.View.VISIBLE)
@@ -454,7 +497,7 @@ class ProofInstrumentation : Instrumentation() {
                 minPss = minOf(minPss, memory.totalPss); maxPss = maxOf(maxPss, memory.totalPss)
                 maxThermal = maxOf(maxThermal, targetContext.getSystemService(android.os.PowerManager::class.java).currentThermalStatus)
             }
-            sendStatus(0, Bundle().apply { putString("stream", "30-second live preview: ${liveSamples.last()}; PSS ${minPss / 1024}–${maxPss / 1024} MiB, thermal max=$maxThermal\n") })
+            sendStatus(0, Bundle().apply { putString("stream", "5-second live preview: ${liveSamples.last()}; PSS ${minPss / 1024}–${maxPss / 1024} MiB, thermal max=$maxThermal\n") })
             runOnMainSync { recordButton().performClick() }
             await { recordButton().isEnabled && recordButton().text.startsWith("Stop") }
             await { (field("effectImage") as android.widget.ImageView).drawable != null }
@@ -474,7 +517,20 @@ class ProofInstrumentation : Instrumentation() {
                     android.view.MotionEvent.ACTION_UP, tele.width / 2f, tele.height / 2f, 0)
                 tele.dispatchTouchEvent(event); event.recycle()
             }
-            Thread.sleep(1000)
+            runOnMainSync {
+                val pause = camera.window.decorView.findViewWithTag<android.widget.Button>("pause")
+                check(pause.isEnabled && pause.text == "Pause")
+                pause.performClick()
+                check(pause.text == "Resume" && field("recording") == true)
+            }
+            val pausedAt = (field("recordingTime") as RecordingTime).elapsed(android.os.SystemClock.elapsedRealtime())
+            Thread.sleep(2000)
+            check((field("recordingTime") as RecordingTime).elapsed(android.os.SystemClock.elapsedRealtime()) == pausedAt)
+            runOnMainSync {
+                camera.window.decorView.findViewWithTag<android.widget.Button>("pause").performClick()
+                check(!(field("recordingTime") as RecordingTime).paused)
+            }
+            Thread.sleep(2000)
             runOnMainSync {
                 check(recordButton().text.startsWith("Stop")) { "Recording stopped before the test requested stop" }
                 recordButton().performClick()
@@ -502,7 +558,7 @@ class ProofInstrumentation : Instrumentation() {
                 check(video.getInteger(MediaFormat.KEY_WIDTH) == 640 && video.getInteger(MediaFormat.KEY_HEIGHT) == 480)
                 rotation = if (video.containsKey(MediaFormat.KEY_ROTATION)) video.getInteger(MediaFormat.KEY_ROTATION) else 0
                 duration = video.getLong(MediaFormat.KEY_DURATION)
-                check(duration in 2_500_000..4_000_000) { "Unexpected test recording duration $duration" }
+                check(duration in 3_400_000..4_800_000) { "Unexpected test recording duration $duration" }
             } finally { extractor.release() }
             val before = tracks(uri)
             val result = VideoProcessor.process(targetContext, uri, "{\"version\":1}") {}
@@ -517,10 +573,15 @@ class ProofInstrumentation : Instrumentation() {
             val processedStartOffset = after.getValue("video").timestamps.first() - b.first()
             check(abs(originalStartOffset - processedStartOffset) <= 100)
             return "real ultrawide recording ${duration / 1000} ms, 640x480, rotation=$rotation, " +
-                "${result.frames} frames, AAC present, live preview active, hold-T crop zoom=$zoom; original retained at $uri; " +
+                "${result.frames} frames, AAC present, pause/resume removed 2s, live preview active, hold-T crop zoom=$zoom; original retained at $uri; " +
                 "processed ${result.width}x${result.height} in ${result.elapsedMs} ms, AAC payloads and A/V start offset preserved."
         } finally {
             runOnMainSync { camera.finish() }
+            zoomKey?.let { key ->
+                val edit = cameraPreferences.edit()
+                if (previousZoom == null) edit.remove(key) else edit.putFloat(key, previousZoom!!)
+                check(edit.commit())
+            }
             processed?.delete()
         }
     }

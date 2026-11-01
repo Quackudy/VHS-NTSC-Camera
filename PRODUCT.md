@@ -26,3 +26,10 @@ there is no fixed 15-second cap. Background/process-death recovery is deferred.
 Device: Samsung Galaxy A26 SM-A266B, One UI 8.5; Android 16/API 36 verified by adb.
 The user wants lens choice, defaulting to the widest exposed rear lens (0.5x
 ultrawide), and crop zoom that never changes the selected physical camera.
+
+
+Version 0.6 is camera-first, with a large viewfinder, W/T and pinch, a record/stop
+button, same-file pause/resume and a pause-excluding timer. The former proof
+screen is Developer mode in Settings. Starting crop zoom is remembered per
+physical camera; settings also contain presets, lens selection, stabilization,
+live preview and speed. Normal exports use a smaller progress/save screen.
