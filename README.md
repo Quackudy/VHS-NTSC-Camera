@@ -21,6 +21,20 @@ as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
 
+## Reset preset (0.6.3)
+
+In Camera **Settings**, tap **Reset preset to default** to return to the same
+ntsc-rs legacy defaults used before any import. Developer mode has the same
+button. This clears the remembered imported JSON, filename and compatibility
+warnings, applies `{"version":1}` to live preview and future exports, and keeps
+the default after restarting. Other camera preferences are preserved.
+
+The synthetic workflow test checks reset, cleared metadata, unchanged unrelated
+preferences and reopening with the defaults; the optional preview-only camera
+test additionally checks that the live engine switches back to default JSON.
+Build/lint and APK signing/alignment passed; device reset tests and installation
+are pending reconnection of the A26.
+
 ## Launcher icon (0.6.2)
 
 The launcher uses the user's workspace `app_image.jpg`: density-specific PNGs

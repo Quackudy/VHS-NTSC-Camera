@@ -27,7 +27,7 @@ import kotlin.math.roundToInt
 class MainActivity : Activity() {
     // shortcut: exports belong to this screen; add a foreground job when background export is needed.
     private val worker = Executors.newSingleThreadExecutor()
-    private var preset = "{\"version\":1}"
+    private var preset = PresetStore.DEFAULT_JSON
     private lateinit var source: Bitmap
     private var processed: Bitmap? = null
     private lateinit var image: ImageView
@@ -87,6 +87,17 @@ class MainActivity : Activity() {
             buttons.add(this)
         }
         button("Import ntsc-rs preset") { openDocument(IMPORT_PRESET, "*/*") }
+        button("Reset preset to default") {
+            background("Resetting preset…") {
+                val result = PresetStore.reset(this)
+                onUi {
+                    preset = result.json
+                    presetLabel.text = "Preset: ntsc-rs legacy defaults"
+                    clearResult()
+                    status.text = if (result.remembered) "Preset reset to default." else "Default preset active, but saving the reset failed."
+                }
+            }
+        }.tag = "resetPreset"
         button("Open camera · live ntsc-rs preview") {
             startActivityForResult(Intent(this, CameraActivity::class.java).putExtra("preset", preset), IMPORT_VIDEO)
         }

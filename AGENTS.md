@@ -244,3 +244,19 @@ aapt icon-resource wiring passed; code11 installed on A26. No engine changes
 from the fully tested v0.6.1 checkpoint. Test package removed for user0. No new
 phone user-file browsing/reading occurred after the privacy boundary was set.
 The final supported preset state/settings were restored after fixture tests.
+
+Version 0.6.3 (code12), branch v0.6.3-reset-preset, adds Reset preset to default
+in Camera Settings and Developer mode. PresetStore.DEFAULT_JSON is exactly
+{"version":1}, the original pre-import legacy settings, not NtscEffect::default().
+PresetStore.reset removes only preset/presetName/presetWarnings, returns a default
+ImportedPreset and reports persistence failure. Camera routes imports and reset
+through shared changePreset/applyImportedPreset so the existing session-snapshot
+race guard handles live updates; Developer mode clears its processed image and
+updates current export settings. Tests add reset/reopen and unrelated preference
+preservation to the default suite, and live-engine reset to optional cameraPreset.
+The phone was disconnected at the start of this request. The user was asked to
+reconnect for install and synthetic tests only (no camera/mic or phone browsing).
+Device checks and installation are pending until that connection is available.
+Build/lint, APK signing and 16KiB zip alignment passed for 0.6.3. APK and test
+APK are built; no device was available, so reset/reopen/live tests have not run
+and 0.6.3 has not been installed. Keep this distinction when the user reconnects.

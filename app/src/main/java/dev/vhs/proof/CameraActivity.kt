@@ -65,7 +65,7 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
     private lateinit var liveStatus: TextView
     private var live: LivePreview? = null
     @Volatile private var previewRotation = 0
-    private var preset = "{\"version\":1}"
+    private var preset = PresetStore.DEFAULT_JSON
     private var rememberedPreset: String? = null
     private lateinit var lensPicker: Spinner
     private lateinit var eis: CheckBox
@@ -206,11 +206,17 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
         Button(this).apply {
             text = "Import ntsc-rs preset"; minHeight = dp(48); settingsPanel.addView(this)
             setOnClickListener {
+                if (presetImporting) return@setOnClickListener
                 settingsDialog?.dismiss()
                 startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE); type = "*/*"
                 }, IMPORT_PRESET)
             }
+        }
+        Button(this).apply {
+            text = "Reset preset to default"; tag = "resetPreset"; minHeight = dp(48)
+            settingsPanel.addView(this)
+            setOnClickListener { changePreset("Preset not reset") { PresetStore.reset(this@CameraActivity) } }
         }
         liveToggle = CheckBox(this).apply {
             text = "Live ntsc-rs preview"; tag = "live"; minHeight = dp(48)
@@ -400,21 +406,26 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != IMPORT_PRESET || resultCode != RESULT_OK) return
         val uri = data?.data ?: return
-        status.text = "Importing preset…"
+        changePreset("Preset not imported") { PresetStore.import(this, uri) }
+    }
+
+    private fun changePreset(failureTitle: String, load: () -> ImportedPreset) {
+        if (presetImporting || recording) return
+        status.text = "Updating preset…"
         presetImporting = true
         refreshButtons()
         importWorker.execute {
             try {
-                val imported = PresetStore.import(this, uri)
+                val imported = load()
                 handler.post { if (!isDestroyed) applyImportedPreset(imported) }
             } catch (error: Exception) {
                 handler.post {
                     if (!isDestroyed && !isFinishing) {
                         presetImporting = false
-                        notice = "Preset not imported. Previous preset kept. ${error.message}"
+                        notice = "$failureTitle. Previous preset kept. ${error.message}"
                         status.text = notice
                         settingsDialog?.dismiss()
-                        settingsDialog = AlertDialog.Builder(this).setTitle("Preset not imported")
+                        settingsDialog = AlertDialog.Builder(this).setTitle(failureTitle)
                             .setMessage("${error.message}\n\nYour previous preset is still selected.")
                             .setPositiveButton("OK", null).show()
                         refreshButtons()
@@ -815,7 +826,7 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
         super.onResume(); resumed = true
         val latestPreset = preferences.getString("preset", null)
         if (latestPreset != rememberedPreset) {
-            preset = latestPreset ?: "{\"version\":1}"
+            preset = latestPreset ?: PresetStore.DEFAULT_JSON
             rememberedPreset = latestPreset
         }
         presetLabel.text = PresetStore.label(this@CameraActivity)

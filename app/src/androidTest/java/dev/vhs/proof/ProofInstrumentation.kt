@@ -398,6 +398,21 @@ class ProofInstrumentation : Instrumentation() {
             val standaloneTracks = tracks(requireNotNull(saved))
             check(standaloneTracks.getValue("video").timestamps == outputTracks.getValue("video").timestamps)
             check(standaloneTracks.getValue("audio") == outputTracks.getValue("audio"))
+            runOnMainSync { standalone.finish() }
+            await { standalone.isDestroyed }
+            val resetScreen = launch()
+            val unrelated = preferences.all.filterKeys { it !in setOf("preset", "presetName", "presetWarnings") }
+            runOnMainSync { resetScreen.window.decorView.findViewWithTag<android.widget.Button>("resetPreset").performClick() }
+            await { field(resetScreen, "busy") == false && field(resetScreen, "preset") == PresetStore.DEFAULT_JSON }
+            for (key in listOf("preset", "presetName", "presetWarnings")) check(!preferences.contains(key))
+            check(preferences.all == unrelated) { "Preset reset changed other camera settings" }
+            runOnMainSync { resetScreen.finish() }
+            await { resetScreen.isDestroyed }
+            val reopened = launch()
+            runOnMainSync {
+                check(field(reopened, "preset") == "{\"version\":1}")
+                check((field(reopened, "presetLabel") as android.widget.TextView).text == "Preset: ntsc-rs legacy defaults")
+            }
             check(input.readBytes().contentEquals(originalBytes)) { "Export or cancellation changed the source" }
         } finally {
             runOnMainSync { activity?.finish() }
@@ -550,7 +565,14 @@ class ProofInstrumentation : Instrumentation() {
                 check(field("recording") == false && field("recorder") == null)
             }
             check(preferences.getString("preset", null) == selected)
-            return "two imported presets reached live engine, including a deterministic import/configuration race; filename displayed; PDF visibly rejected, previous preset retained; no recording/microphone."
+            runOnMainSync {
+                (field("settingsPanel") as android.widget.LinearLayout)
+                    .findViewWithTag<android.widget.Button>("resetPreset").performClick()
+            }
+            await { field("presetImporting") == false && field("configuring") == false && livePreset() == PresetStore.DEFAULT_JSON }
+            for (key in listOf("preset", "presetName", "presetWarnings")) check(!preferences.contains(key))
+            runOnMainSync { check((field("presetLabel") as android.widget.TextView).text == "Preset: ntsc-rs legacy defaults") }
+            return "reset restored live defaults and cleared imported metadata; two imported presets reached live engine, including a deterministic import/configuration race; filename displayed; PDF visibly rejected, previous preset retained; no recording/microphone."
         } finally {
             runOnMainSync { camera.finish() }
             check(preferences.edit().putString("preset", previous).putString("presetName", previousName).putString("presetWarnings", previousWarnings).commit())
