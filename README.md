@@ -32,8 +32,9 @@ the default after restarting. Other camera preferences are preserved.
 The synthetic workflow test checks reset, cleared metadata, unchanged unrelated
 preferences and reopening with the defaults; the optional preview-only camera
 test additionally checks that the live engine switches back to default JSON.
-Build/lint and APK signing/alignment passed; device reset tests and installation
-are pending reconnection of the A26.
+Build/lint, APK signing/alignment and the on-device synthetic reset workflow
+passed; code 12 is installed on the A26. The optional camera-preview reset check
+has not been run.
 
 ## Launcher icon (0.6.2)
 

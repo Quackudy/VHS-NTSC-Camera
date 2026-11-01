@@ -254,9 +254,9 @@ through shared changePreset/applyImportedPreset so the existing session-snapshot
 race guard handles live updates; Developer mode clears its processed image and
 updates current export settings. Tests add reset/reopen and unrelated preference
 preservation to the default suite, and live-engine reset to optional cameraPreset.
-The phone was disconnected at the start of this request. The user was asked to
-reconnect for install and synthetic tests only (no camera/mic or phone browsing).
-Device checks and installation are pending until that connection is available.
-Build/lint, APK signing and 16KiB zip alignment passed for 0.6.3. APK and test
-APK are built; no device was available, so reset/reopen/live tests have not run
-and 0.6.3 has not been installed. Keep this distinction when the user reconnects.
+Build/lint, APK signing and 16KiB zip alignment passed for 0.6.3. Code 12 was
+installed on the A26 and the default synthetic instrumentation suite passed,
+including reset/reopen and unrelated-preference preservation. The optional
+camera-preview reset test has not run; the synthetic suite did not activate
+camera or microphone. The helper test package was removed for user 0. No phone
+files were browsed.
