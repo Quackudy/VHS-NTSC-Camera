@@ -28,8 +28,9 @@ components:
 
 Operate mode: shooting and watching the footage lead. The implemented Android
 Views screen uses a dark platform Material theme; developer tools and export
-screens use the existing light platform theme. This records the v0.6 code, not
-a claim that visual checks on the phone have passed.
+screens use the existing light platform theme. This records the v0.6 code. Portrait and
+landscape ready screens at normal and 1.3x font scale, plus landscape Settings,
+were checked on the A26; active recording/paused appearance was not captured.
 
 ## Colors
 

@@ -52,10 +52,26 @@ stop-while-paused checks without opening the camera/microphone. Hardware
 `cameraRecord=true` now records ~4 seconds over ~6 seconds including a 2-second
 pause; invoke only after explicit user readiness.
 
-Verification pending: the phone disconnected before installing 0.6. Android
-build/lint, native tests, signing/alignment and host checks of zoom limits and
-the pause-aware timer passed. Synthetic phone tests, actual audio pause/resume,
-and portrait/landscape visual checks still need the connected A26.
+Version 0.6 is installed and passed the synthetic A26 suite, including generated
+pause/resume and stop-while-paused recorder checks, plus the approved real
+camera/audio test. Saved 1.5× default zoom reloaded correctly; hold-T kept rear 2
+and its 1.64mm focal length. The ~6-second recording with a 2-second pause produced
+121 video frames (4.2-second video endpoint) plus AAC; the MP4 container is
+4.416 seconds including audio timing/tail. The original is Gallery item 7424;
+normal camera-button export published a 360×480 effected copy as item 7425.
+All 207 AAC packet payloads and all audio/video timestamps were preserved
+(within 100µs), and the original SHA256 was unchanged. No 2-second timestamp gap
+remains; the largest source video packet gap was about 90ms, audio about 21ms.
+These checks establish file/timestamp behavior, not speech/clap perceptual sync.
+
+Actual-device ready-screen captures at normal and 1.3× Android font scale passed
+portrait/landscape layout review; the landscape Settings dialog was also checked.
+Active pause/record states passed functional checks but were not visually captured.
+The preview sample reported 28.7fps, 13.7ms/frame, 2 skipped frames, PSS 102–109MiB
+and thermal status 0 during only five seconds. Long-session heat and stability
+remain unverified. Original orientation/font settings were restored and the
+temporary test package was removed after checks. Build/lint, six native tests,
+signing/alignment and host zoom/timer checks also passed.
 
 ## Live preview (0.5)
 

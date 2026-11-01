@@ -175,9 +175,26 @@ remain clean; live processed recording and background recording are deferred.
 Synthetic instrumentation adds EGL-generated video-only pause/resume and stopping
 while paused; it never activates camera/mic. cameraRecord=true now performs a
 ~6-second wall-time recording with a 2-second pause (~4 seconds of footage),
-preceded by ~5 seconds of preview. Require fresh user readiness; current async
-readiness/connect questions have not yet been answered. The A26 disconnected
-before install. 0.6 build/lint, six native tests/clippy, signing/alignment and
-host JVM assertions for compiled startingZoom/RecordingTime passed. Device
-synthetic recorder tests, audio pause/resume and visual inspection are pending.
-Do not claim 0.6 installed or device-verified until those actually run.
+preceded by ~5 seconds of preview. Require fresh user readiness for future
+camera/mic tests. On reconnect, the user explicitly approved this test and it
+passed. Version 0.6 code 9 is installed. The default synthetic suite passed,
+including EGL video-only pause/resume and stop-while-paused checks. Default 1.5x
+zoom saved/reloaded via the real camera controls; the prior preference was restored.
+The actual test original is Gallery 7424, VHS-original-1793520284752.mp4:
+121 video frames, video endpoint 4200ms, 640x480 rotation90, AAC, 2s pause omitted,
+hold-T ending crop~2.119x, rear 2 focal1.64/EIS0/OIS0 unchanged. Its MP4 container
+is 4416ms including audio timing/tail. The normal Process last clip button then
+published Gallery 7425, VHS-processed-1793520432532.mp4, upright360x480. Back
+returned to the camera. All 207 AAC packet hashes and audio/video timestamps
+matched within100us; original SHA256 unchanged. Max source timestamp gaps were
+video89.94ms/audio21.33ms (no2s gap). This does not verify perceptual speech/clap
+sync or sustained frame continuity. Preview sample:28.7fps,13.7ms/frame,2skipped,
+PSS102–109MiB,thermal0 during only5s. Preserve both Gallery items.
+Actual portrait/landscape ready UI and 1.3x font captures plus landscape Settings
+passed the independent Impeccable material-issue review (disposition ship for
+those captures). Record/pause appearance was not screenshot-tested. Screenshots
+are ignored in app/build/review. Original system accelerometer_rotation0,
+user_rotation0,font_scale1.0 were restored; test package removed for user0.
+Build/lint, six native tests/clippy, signing/alignment and host zoom/timer checks
+passed. Long-session live heat/stability and perceptual pause-join sync remain
+manual tests. No new source changes were required after the phone tests.
