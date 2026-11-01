@@ -1,0 +1,13 @@
+[package]
+name = "vhs-native"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ntsc-rs = { git = "https://github.com/ntsc-rs/ntsc-rs", rev = "8cfc51014092a6dc1da5eb0217bb9ae6516b124e" }
+jni = "0.21.1"
+serde_json = "1.0"

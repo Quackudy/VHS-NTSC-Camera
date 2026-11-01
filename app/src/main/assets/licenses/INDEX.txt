@@ -1,0 +1,206 @@
+Third-party Rust sources used by this proof, including build-time dependencies.
+Generated from native/Cargo.lock via Cargo metadata; refresh when dependencies change.
+Upstream ntsc-rs MIT license selected; other available upstream licenses are preserved too.
+
+bytes 1.12.1
+License: MIT
+Source: https://github.com/tokio-rs/bytes
+License text: bytes-1.12.1-LICENSE.txt
+
+cesu8 1.1.0
+License: Apache-2.0/MIT
+Source: https://github.com/emk/cesu8-rs
+License text: cesu8-1.1.0-COPYRIGHT-RUST.txt.txt
+
+cfg-if 1.0.5
+License: MIT OR Apache-2.0
+Source: https://github.com/rust-lang/cfg-if
+License text: cfg-if-1.0.5-LICENSE-APACHE.txt
+License text: cfg-if-1.0.5-LICENSE-MIT.txt
+
+combine 4.6.9
+License: MIT
+Source: https://github.com/Marwes/combine
+License text: combine-4.6.9-LICENSE.txt
+
+crossbeam-deque 0.8.8
+License: MIT OR Apache-2.0
+Source: https://github.com/crossbeam-rs/crossbeam
+License text: crossbeam-deque-0.8.8-LICENSE-APACHE.txt
+License text: crossbeam-deque-0.8.8-LICENSE-MIT.txt
+
+crossbeam-epoch 0.9.21
+License: MIT OR Apache-2.0
+Source: https://github.com/crossbeam-rs/crossbeam
+License text: crossbeam-epoch-0.9.21-LICENSE-APACHE.txt
+License text: crossbeam-epoch-0.9.21-LICENSE-MIT.txt
+
+crossbeam-utils 0.8.23
+License: MIT OR Apache-2.0
+Source: https://github.com/crossbeam-rs/crossbeam
+License text: crossbeam-utils-0.8.23-LICENSE-APACHE.txt
+License text: crossbeam-utils-0.8.23-LICENSE-MIT.txt
+
+fearless_simd 0.7.0
+License: Apache-2.0 OR MIT
+Source: https://github.com/linebender/fearless_simd
+License text: fearless_simd-0.7.0-LICENSE-APACHE.txt
+License text: fearless_simd-0.7.0-LICENSE-MIT.txt
+
+hifijson 0.5.0
+License: MIT
+Source: https://github.com/01mf02/hifijson
+No top-level license file in fetched package; see source metadata.
+
+itoa 1.0.18
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/itoa
+License text: itoa-1.0.18-LICENSE-APACHE.txt
+License text: itoa-1.0.18-LICENSE-MIT.txt
+
+jni 0.21.1
+License: MIT/Apache-2.0
+Source: https://github.com/jni-rs/jni-rs
+License text: jni-0.21.1-LICENSE-APACHE.txt
+License text: jni-0.21.1-LICENSE-MIT.txt
+
+jni-sys 0.3.1
+License: MIT OR Apache-2.0
+Source: https://github.com/jni-rs/jni-sys
+License text: jni-sys-0.3.1-LICENSE-APACHE.txt
+License text: jni-sys-0.3.1-LICENSE-MIT.txt
+
+jni-sys 0.4.1
+License: MIT OR Apache-2.0
+Source: https://github.com/jni-rs/jni-sys
+License text: jni-sys-0.4.1-LICENSE-APACHE.txt
+License text: jni-sys-0.4.1-LICENSE-MIT.txt
+
+jni-sys-macros 0.4.1
+License: MIT OR Apache-2.0
+Source: https://github.com/jni-rs/jni-sys
+License text: jni-sys-macros-0.4.1-LICENSE-MIT.txt
+Fetched from repository commit 64d77b7a5f119d7b55b4e2c169a4668067ff59e6.
+
+libc 0.2.191
+License: MIT OR Apache-2.0
+Source: https://github.com/rust-lang/libc
+License text: libc-0.2.191-LICENSE-APACHE.txt
+License text: libc-0.2.191-LICENSE-MIT.txt
+
+log 0.4.35
+License: MIT OR Apache-2.0
+Source: https://github.com/rust-lang/log
+License text: log-0.4.35-LICENSE-APACHE.txt
+License text: log-0.4.35-LICENSE-MIT.txt
+
+memchr 2.8.3
+License: Unlicense OR MIT
+Source: https://github.com/BurntSushi/memchr
+License text: memchr-2.8.3-COPYING.txt
+License text: memchr-2.8.3-LICENSE-MIT.txt
+
+ntsc-rs 0.1.2
+License: MIT OR ISC OR Apache-2.0
+Source: https://github.com/valadaptive/ntsc-rs/tree/main/crates/ntscrs
+License text: ntsc-rs-0.1.2-LICENSE-APACHE-2.0.txt
+License text: ntsc-rs-0.1.2-LICENSE-ISC.txt
+License text: ntsc-rs-0.1.2-LICENSE-MIT.txt
+
+num_cpus 1.17.0
+License: MIT OR Apache-2.0
+Source: https://github.com/seanmonstar/num_cpus
+License text: num_cpus-1.17.0-LICENSE-APACHE.txt
+License text: num_cpus-1.17.0-LICENSE-MIT.txt
+
+num_enum 0.7.6
+License: BSD-3-Clause OR MIT OR Apache-2.0
+Source: https://github.com/illicitonion/num_enum
+License text: num_enum-0.7.6-LICENSE-APACHE.txt
+License text: num_enum-0.7.6-LICENSE-BSD.txt
+License text: num_enum-0.7.6-LICENSE-MIT.txt
+
+num_enum_derive 0.7.6
+License: BSD-3-Clause OR MIT OR Apache-2.0
+Source: https://github.com/illicitonion/num_enum
+License text: num_enum_derive-0.7.6-LICENSE-APACHE.txt
+License text: num_enum_derive-0.7.6-LICENSE-BSD.txt
+License text: num_enum_derive-0.7.6-LICENSE-MIT.txt
+
+proc-macro2 1.0.107
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/proc-macro2
+License text: proc-macro2-1.0.107-LICENSE-APACHE.txt
+License text: proc-macro2-1.0.107-LICENSE-MIT.txt
+
+quote 1.0.47
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/quote
+License text: quote-1.0.47-LICENSE-APACHE.txt
+License text: quote-1.0.47-LICENSE-MIT.txt
+
+rayon-core 1.13.0
+License: MIT OR Apache-2.0
+Source: https://github.com/rayon-rs/rayon
+License text: rayon-core-1.13.0-LICENSE-APACHE.txt
+License text: rayon-core-1.13.0-LICENSE-MIT.txt
+
+rustversion 1.0.23
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/rustversion
+License text: rustversion-1.0.23-LICENSE-APACHE.txt
+License text: rustversion-1.0.23-LICENSE-MIT.txt
+
+same-file 1.0.6
+License: Unlicense/MIT
+Source: https://github.com/BurntSushi/same-file
+License text: same-file-1.0.6-COPYING.txt
+License text: same-file-1.0.6-LICENSE-MIT.txt
+
+serde_core 1.0.229
+License: MIT OR Apache-2.0
+Source: https://github.com/serde-rs/serde
+License text: serde_core-1.0.229-LICENSE-APACHE.txt
+License text: serde_core-1.0.229-LICENSE-MIT.txt
+
+serde_json 1.0.154
+License: MIT OR Apache-2.0
+Source: https://github.com/serde-rs/json
+License text: serde_json-1.0.154-LICENSE-APACHE.txt
+License text: serde_json-1.0.154-LICENSE-MIT.txt
+
+syn 2.0.119
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/syn
+License text: syn-2.0.119-LICENSE-APACHE.txt
+License text: syn-2.0.119-LICENSE-MIT.txt
+
+thiserror 1.0.69
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/thiserror
+License text: thiserror-1.0.69-LICENSE-APACHE.txt
+License text: thiserror-1.0.69-LICENSE-MIT.txt
+
+thiserror-impl 1.0.69
+License: MIT OR Apache-2.0
+Source: https://github.com/dtolnay/thiserror
+License text: thiserror-impl-1.0.69-LICENSE-APACHE.txt
+License text: thiserror-impl-1.0.69-LICENSE-MIT.txt
+
+unicode-ident 1.0.27
+License: (MIT OR Apache-2.0) AND Unicode-3.0
+Source: https://github.com/dtolnay/unicode-ident
+License text: unicode-ident-1.0.27-LICENSE-APACHE.txt
+License text: unicode-ident-1.0.27-LICENSE-MIT.txt
+License text: unicode-ident-1.0.27-LICENSE-UNICODE.txt
+
+walkdir 2.5.0
+License: Unlicense/MIT
+Source: https://github.com/BurntSushi/walkdir
+License text: walkdir-2.5.0-COPYING.txt
+License text: walkdir-2.5.0-LICENSE-MIT.txt
+
+zmij 1.0.23
+License: MIT
+Source: https://github.com/dtolnay/zmij
+License text: zmij-1.0.23-LICENSE-MIT.txt

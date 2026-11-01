@@ -1,0 +1,54 @@
+Samsung Galaxy A26 SM-A266B, Android 16 / API 36
+Read from public Camera2 characteristics on the connected device, 2026-11-01.
+No camera capture was needed to obtain this catalog.
+
+Exposed IDs: 0, 1, 2, 3
+Rear IDs: 0, 2. Front IDs: 1, 3 (not offered in this camera proof).
+None advertise logical multi-camera physical IDs.
+
+Rear ID 2 (widest exposed rear camera, default)
+  focal length: 1.64 mm
+  sensor physical size: 3.65568 x 2.74176 mm
+  approximate horizontal FoV from metadata: 96 degrees
+  sensor orientation: 90 degrees
+  active array: Rect(0, 0 - 3264, 2448)
+  advertised maximum digital crop zoom: 8.0
+  EIS modes: OFF only (0)
+  OIS modes: OFF only (0)
+  common 4:3 preview/MediaRecorder sizes <=1280 wide: 640x480, 960x720
+
+Rear ID 0 (main)
+  focal length: 4.0 mm
+  sensor physical size: 5.2224 x 3.9168 mm
+  approximate horizontal FoV from metadata: 66 degrees
+  sensor orientation: 90 degrees
+  active array: Rect(0, 0 - 4080, 3060)
+  advertised maximum digital crop zoom: 8.0
+  EIS modes: OFF only (0)
+  OIS modes: OFF (0), ON (1)
+  common 4:3 preview/MediaRecorder sizes <=1280 wide: 640x480, 960x720
+
+Both report AE frame-rate ranges:
+  [15,15], [15,20], [20,20], [24,24], [8,30], [10,30], [15,30], [30,30]
+
+User-approved hardware test:
+  Original recorded/published: 3093 ms container duration (MediaStore),
+  2873 ms video-track duration, 640x480, H.264 video + AAC audio,
+  rotation tag 90 degrees, 84 encoded video frames.
+  Hold-T reached approximately 1.412x crop zoom.
+  Capture results retained camera ID 2 / focal length 1.64 mm, EIS=0, OIS=0.
+  Reported crop changed from Rect(0,0 - 3264,2448) to Rect(476,357 - 2788,2091).
+  All 84 frames processed through the actual ntsc-rs core, resulting in an
+  upright 360x480 MP4 in 2307 ms using upstream legacy defaults.
+  AAC payloads and A/V start offset were preserved by post-processing.
+  Original test recording remains in Movies/VHS on the phone.
+
+Limitations:
+  Characteristic mode lists and capture results do not measure handheld motion.
+  Main-camera OIS ON has not been exercised in a hardware test.
+  Perceived A/V sync, preview-versus-saved framing, landscape orientation,
+  microphone audibility and sustained heat still need manual checks.
+
+Live preview probe (version 0.5): both rear 2 and rear 0 additionally report
+YUV_420_888 4:3 sizes <=640: 640x480, 320x240. This static capability check does
+not itself verify a simultaneous YUV + MediaRecorder session.
