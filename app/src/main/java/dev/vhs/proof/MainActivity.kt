@@ -44,6 +44,7 @@ class MainActivity : Activity() {
     private var exporting = false
     private var savedVideo: Uri? = null
     private var busy = false
+    private var importErrorDialog: android.app.AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +78,7 @@ class MainActivity : Activity() {
         }
         label("Developer mode", 24f)
         label("Camera and processing · all processing stays on this phone")
-        presetLabel = label(if (preferences.contains("preset")) "Preset: remembered import" else "Preset: upstream legacy defaults (version 1)")
+        presetLabel = label(PresetStore.label(this))
         fun button(text: String, action: () -> Unit) = Button(this).apply {
             this.text = text
             minHeight = dp(48)
@@ -171,11 +172,17 @@ class MainActivity : Activity() {
         if (resultCode != RESULT_OK) return
         val uri = data?.data ?: return
         when (requestCode) {
-            IMPORT_PRESET -> background("Reading preset…") {
-                val (text, remembered) = PresetStore.import(this, uri)
+            IMPORT_PRESET -> background("Reading preset…", presetImport = true) {
+                val (text, remembered, name, warnings) = PresetStore.import(this, uri)
                 onUi {
                     preset = text
-                    presetLabel.text = if (remembered) "Preset: imported and remembered" else "Preset: imported (could not remember selection)"
+                    presetLabel.text = "Preset: $name${if (remembered) "" else " (not remembered)"}${if (warnings.isBlank()) "" else "\n$warnings"}"
+                    if (warnings.isNotBlank() && !isFinishing) {
+                        importErrorDialog?.dismiss()
+                        importErrorDialog = android.app.AlertDialog.Builder(this).setTitle("Preset loaded with compatibility notice")
+                            .setMessage("$name\n\n$warnings\n\nAll other settings are loaded.")
+                            .setPositiveButton("OK", null).show()
+                    }
                     clearResult()
                     status.text = if (remembered) "Preset accepted and saved for future launches." else "Preset accepted, but saving the selection failed. It may reset after restart."
                 }
@@ -302,7 +309,7 @@ class MainActivity : Activity() {
         if (exporting) exportStatus.text = message else status.text = message
     }
 
-    private fun background(message: String, videoExport: Boolean = false, task: () -> Unit) {
+    private fun background(message: String, videoExport: Boolean = false, presetImport: Boolean = false, task: () -> Unit) {
         if (busy) return
         busy = true
         exporting = videoExport
@@ -324,7 +331,15 @@ class MainActivity : Activity() {
             } catch (_: CancellationException) {
                 onUi { showTaskStatus("Export cancelled. Original video kept.") }
             } catch (e: Exception) {
-                onUi { showTaskStatus("Failed: ${e.message}. Original files are kept. Try again or choose another file.") }
+                onUi {
+                    showTaskStatus("Failed: ${e.message}. Original files are kept. Try again or choose another file.")
+                    if (presetImport && !isFinishing) {
+                        importErrorDialog?.dismiss()
+                        importErrorDialog = android.app.AlertDialog.Builder(this).setTitle("Preset not imported")
+                            .setMessage("${e.message}\n\nYour previous preset is still selected.")
+                            .setPositiveButton("OK", null).show()
+                    }
+                }
             } catch (e: LinkageError) {
                 onUi { showTaskStatus("Rust library could not load: ${e.message}. Rebuild for this phone's ABI.") }
             } finally {
@@ -351,6 +366,7 @@ class MainActivity : Activity() {
     private fun onUi(action: () -> Unit) = runOnUiThread { if (!isDestroyed) action() }
 
     override fun onDestroy() {
+        importErrorDialog?.dismiss()
         worker.shutdownNow()
         cancelRequested = true
         super.onDestroy()

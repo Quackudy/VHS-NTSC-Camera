@@ -200,7 +200,7 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         presetLabel = TextView(this).apply {
-            text = if (preferences.contains("preset")) "Preset: imported ntsc-rs preset" else "Preset: ntsc-rs legacy defaults"
+            text = PresetStore.label(this@CameraActivity)
             settingsPanel.addView(this)
         }
         Button(this).apply {
@@ -405,24 +405,42 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
         refreshButtons()
         importWorker.execute {
             try {
-                val (json, remembered) = PresetStore.import(this, uri)
+                val imported = PresetStore.import(this, uri)
+                handler.post { if (!isDestroyed) applyImportedPreset(imported) }
+            } catch (error: Exception) {
                 handler.post {
-                    if (!isDestroyed) {
-                        preset = json
+                    if (!isDestroyed && !isFinishing) {
                         presetImporting = false
-                        presetLabel.text = "Preset: imported ntsc-rs preset"
-                        notice = if (remembered) "Preset imported. Originals stay clean; Process last clip saves the effect." else "Preset imported, but could not remember it for next launch."
+                        notice = "Preset not imported. Previous preset kept. ${error.message}"
                         status.text = notice
-                        if (device != null && !recording && !configuring) {
-                            try { createSession(false) } catch (error: Exception) { configuring = false; showError(error) }
-                        }
+                        settingsDialog?.dismiss()
+                        settingsDialog = AlertDialog.Builder(this).setTitle("Preset not imported")
+                            .setMessage("${error.message}\n\nYour previous preset is still selected.")
+                            .setPositiveButton("OK", null).show()
                         refreshButtons()
                     }
                 }
-            } catch (error: Exception) {
-                handler.post { if (!isDestroyed) { presetImporting = false; showError(error); refreshButtons() } }
             }
         }
+    }
+
+    private fun applyImportedPreset(imported: ImportedPreset) {
+        preset = imported.json
+        presetImporting = false
+        presetLabel.text = "Preset: ${imported.name}${if (imported.warnings.isBlank()) "" else "\n${imported.warnings}"}"
+        notice = if (imported.remembered) "Loaded ${imported.name}. Applying it to the preview and next export." else
+            "Loaded ${imported.name}, but could not remember it for next launch."
+        status.text = notice
+        if (imported.warnings.isNotBlank() && !isFinishing) {
+            settingsDialog?.dismiss()
+            settingsDialog = AlertDialog.Builder(this).setTitle("Preset loaded with compatibility notice")
+                .setMessage("${imported.name}\n\n${imported.warnings}\n\nAll other settings are loaded.")
+                .setPositiveButton("OK", null).show()
+        }
+        if (device != null && !recording && !configuring) {
+            try { createSession(false) } catch (error: Exception) { configuring = false; showError(error) }
+        }
+        refreshButtons()
     }
 
     private fun pauseOrResume() {
@@ -502,6 +520,7 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
     private fun createSession(forRecording: Boolean) {
         val camera = device ?: return
         val token = ++generation
+        val sessionPreset = preset
         configuring = true
         refreshButtons()
         session?.close(); session = null
@@ -513,18 +532,18 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
         texture.alpha = if (liveToggle.isChecked) 0f else 1f
         previewLabel.text = if (liveToggle.isChecked) "LIVE EFFECT · 4:3" else "ORIGINAL · 4:3"
         val preview = if (liveToggle.isChecked) {
-            Native.validatePreset(preset)
+            Native.validatePreset(sessionPreset)
             val map = requireNotNull(lens.characteristics[C.SCALER_STREAM_CONFIGURATION_MAP])
             val liveSize = map.getOutputSizes(ImageFormat.YUV_420_888)?.filter {
                 it.width * 3 == it.height * 4 && it.width in 320..640 && it.height <= 480
             }?.minByOrNull { it.width * it.height }
             requireNotNull(liveSize) { "No supported 320–640 pixel 4:3 YUV stream. Disable live preview to record." }
             liveStatus.text = "Starting live ntsc-rs · $liveSize. Originals remain unprocessed."
-            LivePreview(liveSize, preset, { previewRotation }, { bitmap, _, stats ->
-                if (token == generation && resumed) {
+            LivePreview(liveSize, sessionPreset, { previewRotation }, { bitmap, _, stats ->
+                if (token == generation && resumed && sessionPreset == preset) {
                     effectImage.setImageBitmap(bitmap)
                     effectImage.visibility = View.VISIBLE
-                    if (stats != null) liveStatus.text = "$stats\nOriginals record without the effect."
+                    if (stats != null) liveStatus.text = "${presetLabel.text}\n$stats\nOriginals record without the effect."
                 } else bitmap.recycle()
             }, { error ->
                 if (token == generation) {
@@ -547,6 +566,12 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
                 session = created
                 configuring = false
                 try {
+                    // An import may finish between session creation and this callback.
+                    if (sessionPreset != preset) {
+                        Log.i("VhsCamera", "Preset changed while configuring; rebuilding session")
+                        createSession(forRecording)
+                        return
+                    }
                     check(applyControls(true, forRecording)) { "Camera rejected the capture controls" }
                     if (forRecording) {
                         requireNotNull(recorder).start()
@@ -793,7 +818,7 @@ class CameraActivity : Activity(), TextureView.SurfaceTextureListener {
             preset = latestPreset ?: "{\"version\":1}"
             rememberedPreset = latestPreset
         }
-        presetLabel.text = if (preferences.contains("preset")) "Preset: imported ntsc-rs preset" else "Preset: ntsc-rs legacy defaults"
+        presetLabel.text = PresetStore.label(this@CameraActivity)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         getSystemService(DisplayManager::class.java).registerDisplayListener(displayListener, handler)
         openCamera()

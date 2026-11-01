@@ -4,6 +4,14 @@ The developer uses CachyOS/Linux, can program, and is new to Android. Explain
 Android setup, builds, installation and platform decisions clearly. Make routine
 implementation decisions independently. Build small, verified increments.
 
+## Phone file access
+
+Ask before browsing or reading user files on the phone through ADB. USB debugging
+access is not blanket permission to inspect personal storage. Use workspace files,
+existing explicitly obtained debug copies and test-owned fixtures. Do not read
+Downloads, other phone folders, or preference XML through shell commands without
+asking. The user raised this concern and accepted continued fixing under this rule.
+
 ## Version control
 
 Use Git before moving to another app version. Commit the current verified state
@@ -198,3 +206,29 @@ user_rotation0,font_scale1.0 were restored; test package removed for user0.
 Build/lint, six native tests/clippy, signing/alignment and host zoom/timer checks
 passed. Long-session live heat/stability and perceptual pause-join sync remain
 manual tests. No new source changes were required after the phone tests.
+
+Version 0.6.1 (code10, branch v0.6.1-preset-import) fixes imports/compatibility.
+Previously the phone had no remembered preset and was using defaults. The two
+known retired keys video_scanline_phase_shift and video_scanline_phase_shift_offset
+no longer reject an otherwise valid preset: they are explicitly reported as not
+applied by the pinned core. Unknown other fields/invalid types or enums still
+reject. Numeric ranges now follow upstream clamping with each adjustment warned.
+Native.validatePreset returns a JNI String of warnings; imported JSON stays intact.
+PresetStore persists presetName/presetWarnings with JSON; Camera and Developer
+mode show filename, visible rejection or compatibility dialogs, and retain prior
+selection on failure. Session snapshots reconfigure if an import completes during
+Camera2 startup; stale frames cannot display under the new selection.
+Eight Rust tests/clippy, build/lint, signing/alignment, the default synthetic A26
+suite (PDF/UTF8/size/unknown rejection and restored warnings included), and the
+explicitly authorized cameraPreset=true preview-only test passed. The latter
+forces import completion before onConfigured, verifies the new engine JSON,
+legacy compatibility notice and PDF rejection, then restores all prior preset
+metadata. No camera recording/microphone capture occurred. Existing locally
+obtained copies of both reported PC presets matched upstream's parsed settings
+exactly; the agent-created debug copies were then removed. User originals on
+phone were never modified. Do not browse/read more user phone files without
+asking; the earlier file access concern applies persistently.
+The two diagnostic presets and README are in docs/preset-checks and were already
+placed in phone Downloads/VHS-preset-checks before the privacy concern. Do not
+arbitrarily select them as the user's permanent preset. A subsequent user request
+asks to use workspace app_image.jpg as app icon after completing this preset fix.

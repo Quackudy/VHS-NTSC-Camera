@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 object Native {
     init { System.loadLibrary("vhs_native") }
-    external fun validatePreset(preset: String)
+    external fun validatePreset(preset: String): String
     external fun process(pixels: IntArray, width: Int, height: Int, frame: Int, preset: String, previewScale: Float = 1f): IntArray
     external fun yuvToRgb(
         y: ByteBuffer, u: ByteBuffer, v: ByteBuffer, strides: IntArray,

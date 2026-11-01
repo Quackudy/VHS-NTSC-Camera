@@ -15,11 +15,13 @@ import kotlin.math.abs
 class ProofInstrumentation : Instrumentation() {
     private var probeOnly = false
     private var cameraRecord = false
+    private var cameraPreset = false
     private var longExport = false
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         probeOnly = arguments?.getString("cameraProbe") == "true"
         cameraRecord = arguments?.getString("cameraRecord") == "true"
+        cameraPreset = arguments?.getString("cameraPreset") == "true"
         longExport = arguments?.getString("longExport") == "true"
         start()
     }
@@ -29,6 +31,10 @@ class ProofInstrumentation : Instrumentation() {
             if (longExport) {
                 val report = checkLongExport()
                 finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: $report\n") })
+                return
+            }
+            if (cameraPreset) {
+                finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: ${checkCameraPresets()}\n") })
                 return
             }
             if (cameraRecord) {
@@ -272,6 +278,8 @@ class ProofInstrumentation : Instrumentation() {
         val presetFile = File.createTempFile("preset-", ".json", targetContext.cacheDir)
         val preferences = targetContext.getSharedPreferences("vhs", Activity.MODE_PRIVATE)
         val previousPreset = preferences.getString("preset", null)
+        val previousPresetName = preferences.getString("presetName", null)
+        val previousWarnings = preferences.getString("presetWarnings", null)
         var activity: MainActivity? = null
         var saved: Uri? = null
         try {
@@ -323,16 +331,42 @@ class ProofInstrumentation : Instrumentation() {
                     Thread.sleep(25)
                 }
             }
-            val imported = "{\"version\":1,\"snow_intensity\":0.1}"
+            val imported = "{\"version\":1,\"snow_intensity\":0.1,\"video_scanline_phase_shift\":2}"
             presetFile.writeText(imported)
             val first = launch()
             runOnMainSync { deliverResult(first, 1, Uri.fromFile(presetFile)) }
             await { field(first, "busy") == false && field(first, "preset") == imported }
             check(preferences.getString("preset", null) == imported)
+            check(preferences.getString("presetName", null) == presetFile.name)
+            check(preferences.getString("presetWarnings", "")!!.contains("video_scanline_phase_shift"))
+            runOnMainSync { (field(first, "importErrorDialog") as android.app.AlertDialog).dismiss() }
+            val rejected = File(targetContext.cacheDir, "not-a-preset.pdf")
+            try {
+                for (bytes in listOf("%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj".toByteArray(),
+                    byteArrayOf(0x7b, 0xff.toByte()),
+                    "{\"version\":1,\"unknown_setting\":true}".toByteArray(),
+                    ByteArray(65537) { 0x20 })) {
+                    rejected.writeBytes(bytes)
+                    try { PresetStore.import(targetContext, Uri.fromFile(rejected)); error("Invalid preset was accepted") }
+                    catch (_: IllegalArgumentException) {}
+                    check(preferences.getString("preset", null) == imported)
+                    check(preferences.getString("presetName", null) == presetFile.name)
+                }
+                rejected.writeText("%PDF-1.7\nnot an ntsc-rs preset")
+                runOnMainSync { deliverResult(first, 1, Uri.fromFile(rejected)) }
+                await { field(first, "busy") == false && (field(first, "importErrorDialog") as? android.app.AlertDialog)?.isShowing == true }
+                runOnMainSync {
+                    check(field(first, "preset") == imported)
+                    (field(first, "importErrorDialog") as android.app.AlertDialog).dismiss()
+                }
+            } finally { rejected.delete() }
             runOnMainSync { first.finish() }
             await { first.isDestroyed }
             val second = launch()
-            runOnMainSync { check(field(second, "preset") == imported) { "Preset was not restored" } }
+            runOnMainSync {
+                check(field(second, "preset") == imported) { "Preset was not restored" }
+                check((field(second, "presetLabel") as android.widget.TextView).text.contains("video_scanline_phase_shift"))
+            }
             runOnMainSync { deliverResult(second, 4, Uri.fromFile(input)) }
             await { field(second, "busy") == false && field(second, "savedVideo") != null }
             runOnMainSync { saved = field(second, "savedVideo") as Uri }
@@ -368,7 +402,7 @@ class ProofInstrumentation : Instrumentation() {
         } finally {
             runOnMainSync { activity?.finish() }
             saved?.let { targetContext.contentResolver.delete(it, null, null) }
-            check(preferences.edit().putString("preset", previousPreset).commit())
+            check(preferences.edit().putString("preset", previousPreset).putString("presetName", previousPresetName).putString("presetWarnings", previousWarnings).commit())
             input.delete(); presetFile.delete()
         }
     }
@@ -438,6 +472,89 @@ class ProofInstrumentation : Instrumentation() {
             gallery?.let { targetContext.contentResolver.delete(it, null, null) }
             output?.delete()
             input.delete()
+        }
+    }
+
+    // Explicit preview-only readiness; never prepares MediaRecorder or opens the microphone.
+    private fun checkCameraPresets(): String {
+        val preferences = targetContext.getSharedPreferences("vhs", Activity.MODE_PRIVATE)
+        val previous = preferences.getString("preset", null)
+        val previousName = preferences.getString("presetName", null)
+        val previousWarnings = preferences.getString("presetWarnings", null)
+        val fixture = File(targetContext.cacheDir, "preview-preset-check.json")
+        val pdf = File(targetContext.cacheDir, "preview-reject-check.pdf")
+        val monitor = addMonitor(CameraActivity::class.java.name, null, false)
+        targetContext.startActivity(android.content.Intent(targetContext, CameraActivity::class.java)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        val camera = waitForMonitorWithTimeout(monitor, 15_000) as? CameraActivity ?: error("Camera screen did not open")
+        removeMonitor(monitor)
+        try {
+            fun field(name: String): Any? = CameraActivity::class.java.getDeclaredField(name).apply { isAccessible = true }.get(camera)
+            fun livePreset(): Any? = (field("live") as? LivePreview)?.let {
+                LivePreview::class.java.getDeclaredField("preset").apply { isAccessible = true }.get(it)
+            }
+            fun await(condition: () -> Boolean) {
+                val end = android.os.SystemClock.elapsedRealtime() + 20_000
+                while (true) {
+                    var done = false
+                    runOnMainSync { done = condition() }
+                    if (done) return
+                    check(android.os.SystemClock.elapsedRealtime() < end) { "Camera preset state timed out" }
+                    Thread.sleep(25)
+                }
+            }
+            fun deliver(uri: Uri) {
+                CameraActivity::class.java.getDeclaredMethod("onActivityResult", Integer.TYPE, Integer.TYPE, android.content.Intent::class.java)
+                    .apply { isAccessible = true }.invoke(camera, 1, Activity.RESULT_OK, android.content.Intent().setData(uri))
+            }
+            await { field("configuring") == false && field("live") != null }
+            for (snow in listOf(0, 1)) {
+                val json = if (snow == 0) "{\"version\":1,\"snow_intensity\":0}" else
+                    "{\"version\":1,\"snow_intensity\":1,\"video_scanline_phase_shift\":2,\"video_scanline_phase_shift_offset\":0}"
+                fixture.writeText(json)
+                if (snow == 0) runOnMainSync { deliver(Uri.fromFile(fixture)) }
+                else {
+                    val imported = PresetStore.import(targetContext, Uri.fromFile(fixture))
+                    runOnMainSync {
+                        CameraActivity::class.java.getDeclaredMethod("createSession", java.lang.Boolean.TYPE)
+                            .apply { isAccessible = true }.invoke(camera, false)
+                        check(field("configuring") == true)
+                        // Deliver the validated import before the queued onConfigured callback.
+                        CameraActivity::class.java.getDeclaredMethod("applyImportedPreset", ImportedPreset::class.java)
+                            .apply { isAccessible = true }.invoke(camera, imported)
+                    }
+                }
+                await { field("presetImporting") == false && field("configuring") == false &&
+                    livePreset() == json && (field("effectImage") as android.widget.ImageView).drawable != null }
+                runOnMainSync {
+                    check((field("presetLabel") as android.widget.TextView).text.contains(fixture.name))
+                    check(field("recording") == false && field("recorder") == null)
+                }
+                check(preferences.getString("preset", null) == json)
+            }
+            runOnMainSync {
+                val dialog = field("settingsDialog") as android.app.AlertDialog
+                check(dialog.isShowing)
+                check(dialog.findViewById<android.widget.TextView>(android.R.id.message).text.contains("video_scanline_phase_shift"))
+                check((field("presetLabel") as android.widget.TextView).text.contains("Retired settings"))
+                dialog.dismiss()
+            }
+            val selected = preferences.getString("preset", null)
+            pdf.writeText("%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj")
+            runOnMainSync { deliver(Uri.fromFile(pdf)) }
+            await { field("presetImporting") == false && (field("settingsDialog") as? android.app.AlertDialog)?.isShowing == true }
+            runOnMainSync {
+                check(field("preset") == selected && livePreset() == selected)
+                check((field("status") as android.widget.TextView).text.contains("Previous preset kept"))
+                (field("settingsDialog") as android.app.AlertDialog).dismiss()
+                check(field("recording") == false && field("recorder") == null)
+            }
+            check(preferences.getString("preset", null) == selected)
+            return "two imported presets reached live engine, including a deterministic import/configuration race; filename displayed; PDF visibly rejected, previous preset retained; no recording/microphone."
+        } finally {
+            runOnMainSync { camera.finish() }
+            check(preferences.edit().putString("preset", previous).putString("presetName", previousName).putString("presetWarnings", previousWarnings).commit())
+            fixture.delete(); pdf.delete()
         }
     }
 

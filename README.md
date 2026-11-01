@@ -21,6 +21,37 @@ as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
 
+## Preset import fixes (0.6.1)
+
+Import now displays the source filename. Invalid files (including PDFs), bad UTF-8,
+unknown fields and unsupported versions show a rejection dialog and retain the
+previous selection. The picker still accepts varied file types so providers can
+expose valid presets with unusual MIME types; file contents decide validity.
+Known retired scanline-phase fields load with an explicit compatibility notice;
+they are not applied by this pinned core. Supported numeric values follow the
+same clamping as upstream, with adjustments reported. Original JSON, filename and
+warnings are remembered; JSON keys are not rewritten or discarded.
+
+A camera-startup race could retain the old LivePreview snapshot after importing.
+Configured sessions now compare their preset snapshot against the selection and
+rebuild if it changed; stale frames are not displayed as the newly selected effect.
+The `cameraPreset=true` instrumentation mode tests this ordering using test-owned
+fixtures and preview only, never camera recording or microphone capture. Obtain
+explicit readiness first. It restores the saved preset/name/warnings afterward.
+
+[Diagnostic presets](docs/preset-checks/README.md) differ only in snow intensity.
+Compare the live effect preview or a processed copy, since originals remain clean.
+The user's two already obtained local preset copies were checked against the
+pinned upstream parser: supported settings match exactly; retired controls are
+reported. The temporary local debug copies were removed after comparison and were never
+committed. Subsequent phone-file reads require explicit user permission.
+
+Version 0.6.1 passed eight native tests/clippy, Android build/lint, signing/alignment,
+the synthetic A26 suite, and an authorized preview-only import test. The latter
+forces the session-startup ordering, checks legacy compatibility notices and
+PDF rejection, and restores the user's preset/filename/warnings. No video or
+microphone capture occurs in that test.
+
 ## Camera controls (0.6)
 
 Version 0.6 opens directly into the camera. The large red button starts/stops
@@ -90,7 +121,8 @@ same validated preset JSON. Preview uses upstream's scale factor to compensate
 for reduced resolution unless the preset already enables video-size scaling.
 The preview is an approximation: resampling, interlace/scanline detail, random
 frame phase and camera-vs-codec color conversion can differ from export. No
-preset keys are omitted. Camera color metadata is used where available;
+supported preset settings are silently omitted. Retired scanline-phase controls
+are explicitly reported as unapplied. Camera color metadata is used where available;
 unspecified components fall back to BT.601/limited with an on-screen notice.
 
 Live processing also runs while recording originals. If a lens rejects the YUV
@@ -127,8 +159,10 @@ phone. Short automated checks do not establish long-session reliability.
   library is linked with 16 KiB page alignment. No Play release is configured.
 - Presets: upstream's flat version-1 JSON format. Recognized settings all go to
   the unmodified core. Unknown keys, unsupported versions, invalid enums/types
-  and out-of-range values fail visibly. Upstream otherwise ignores unknown keys
-  and clamps some values. Missing keys retain **upstream legacy defaults**, not
+  fail visibly. The two retired keys `video_scanline_phase_shift` and
+  `video_scanline_phase_shift_offset` are accepted with an explicit compatibility
+  notice because the pinned core no longer applies them. Numeric settings follow
+  upstream clamping, with each adjusted value reported. Missing keys retain **upstream legacy defaults**, not
   guesses from this app. ntscQT presets are explicitly outside this first proof.
 - The test uses RGB8, scale `[1, 1]`, original `use_field` settings, and upstream
   **Bob deinterlacing** for a progressive display. It does not create interlaced
