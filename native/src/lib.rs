@@ -1,7 +1,7 @@
 use jni::{
     JNIEnv,
     objects::{JIntArray, JObject, JString},
-    sys::{jfloat, jint, jintArray, jstring},
+    sys::{jboolean, jfloat, jint, jintArray, jstring},
 };
 use ntsc_rs::{
     NtscEffect,
@@ -130,6 +130,18 @@ fn process_scaled(
     preset: &str,
     preview_scale: f32,
 ) -> Result<Vec<i32>, String> {
+    process_frame(pixels, width, height, frame, preset, preview_scale, false)
+}
+
+fn process_frame(
+    pixels: &[i32],
+    width: usize,
+    height: usize,
+    frame: usize,
+    preset: &str,
+    preview_scale: f32,
+    clean_edges: bool,
+) -> Result<Vec<i32>, String> {
     if !preview_scale.is_finite() || preview_scale <= 0.0 || preview_scale > 1.0 {
         return Err("Preview scale must be within (0, 1]".into());
     }
@@ -151,26 +163,41 @@ fn process_scaled(
     } else {
         preview_scale
     };
-    let mut rgb = Vec::with_capacity(pixels.len() * 3);
-    for &pixel in pixels {
-        rgb.extend_from_slice(&[(pixel >> 16) as u8, (pixel >> 8) as u8, pixel as u8]);
+    // Extend the source rather than zooming/cropping away its field of view.
+    let side = if clean_edges { 64 } else { 0 };
+    let bottom = if clean_edges { 32 } else { 0 };
+    let padded_width = width + side * 2;
+    let padded_height = height + bottom;
+    let mut rgb = Vec::with_capacity(padded_width * padded_height * 3);
+    for y in 0..padded_height {
+        for x in 0..padded_width {
+            let pixel = pixels[y.min(height - 1) * width + x.saturating_sub(side).min(width - 1)];
+            rgb.extend_from_slice(&[(pixel >> 16) as u8, (pixel >> 8) as u8, pixel as u8]);
+        }
     }
+    let scale =
+        if clean_edges && effect.scale.enabled && effect.scale.settings.scale_with_video_size {
+            scale * height as f32 / padded_height as f32
+        } else {
+            scale
+        };
     effect.apply_effect_to_buffer::<Rgb, u8>(
         ntsc_rs::ctx::global(),
-        (width, height),
+        (padded_width, padded_height),
         &mut rgb,
         frame,
         [scale, scale],
     );
-    Ok(rgb
-        .as_chunks::<3>()
-        .0
-        .iter()
-        .map(|p| {
-            (0xff000000u32 | (u32::from(p[0]) << 16) | (u32::from(p[1]) << 8) | u32::from(p[2]))
-                as i32
-        })
-        .collect())
+    let mut output = Vec::with_capacity(pixels.len());
+    for row in rgb.chunks_exact(padded_width * 3).take(height) {
+        for p in row[side * 3..(side + width) * 3].as_chunks::<3>().0 {
+            output.push(
+                (0xff000000u32 | (u32::from(p[0]) << 16) | (u32::from(p[1]) << 8) | u32::from(p[2]))
+                    as i32,
+            );
+        }
+    }
+    Ok(output)
 }
 
 fn boundary<T>(env: &mut JNIEnv, call: impl FnOnce(&mut JNIEnv) -> Result<T, String>) -> Option<T> {
@@ -216,6 +243,7 @@ pub extern "system" fn Java_dev_vhs_proof_Native_process(
     frame: jint,
     preset: JString,
     preview_scale: jfloat,
+    clean_edges: jboolean,
 ) -> jintArray {
     boundary(&mut env, |env| {
         if width < 2 || height < 2 || frame < 0 {
@@ -229,13 +257,14 @@ pub extern "system" fn Java_dev_vhs_proof_Native_process(
         env.get_int_array_region(&pixels, 0, &mut input)
             .map_err(|e| e.to_string())?;
         let preset = read_preset(env, &preset)?;
-        let output = process_scaled(
+        let output = process_frame(
             &input,
             width as usize,
             height as usize,
             frame as usize,
             &preset,
             preview_scale,
+            clean_edges != 0,
         )?;
         let result = env.new_int_array(len as i32).map_err(|e| e.to_string())?;
         env.set_int_array_region(&result, 0, &output)
@@ -287,16 +316,32 @@ mod tests {
     }
 
     #[test]
-    fn camera_default_only_disables_edge_glitches_from_legacy_defaults() {
-        let legacy = parse_preset(r#"{"version":1}"#).unwrap();
-        let mut expected = legacy;
-        expected.head_switching.enabled = false;
-        expected.vhs_settings.settings.edge_wave.enabled = false;
-        let camera_default = parse_preset(
-            r#"{"version":1,"head_switching":false,"vhs_edge_wave_enabled":false}"#,
-        )
-        .unwrap();
-        assert_eq!(camera_default, expected);
+    fn edge_extension_matches_upstream_then_returns_original_frame_bounds() {
+        let (width, height) = (64, 48);
+        let pixels: Vec<i32> = (0..width * height)
+            .map(|i| (0xff000000u32 | (i as u32 * 777)) as i32)
+            .collect();
+        let preset = r#"{"version":1}"#;
+        let mut extended = Vec::new();
+        for y in 0..height + 32 {
+            for x in 0usize..width + 128 {
+                extended
+                    .push(pixels[y.min(height - 1) * width + x.saturating_sub(64).min(width - 1)]);
+            }
+        }
+        for scale in [1.0, 0.5] {
+            let reference =
+                process_scaled(&extended, width + 128, height + 32, 3, preset, scale).unwrap();
+            let expected: Vec<i32> = reference
+                .chunks_exact(width + 128)
+                .take(height)
+                .flat_map(|row| row[64..64 + width].iter().copied())
+                .collect();
+            assert_eq!(
+                process_frame(&pixels, width, height, 3, preset, scale, true).unwrap(),
+                expected
+            );
+        }
     }
 
     #[test]

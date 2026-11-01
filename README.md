@@ -21,22 +21,25 @@ as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
 
-## Camera default look (0.6.4)
+## Camera default look (0.6.5)
 
-In Camera **Settings**, tap **Reset preset to default** to return to the same
-ntsc-rs legacy look used before any import, with VHS head switching and edge
-wave turned off to remove the lower and side-edge glitches. Grain, color and
-other effect settings stay at the legacy values. Developer mode has the same
-button. This clears the remembered imported JSON, filename and compatibility
-warnings, applies the app default to live preview and future exports, and keeps
-the default after restarting. Other camera preferences are preserved.
+Camera **Settings → Reset preset to default** restores the original ntsc-rs
+legacy JSON `{"version":1}`. All engine settings, including head switching and
+edge wave, are restored; 0.6.4's two disabled settings have been reverted.
 
-The synthetic workflow test checks reset, cleared metadata, unchanged unrelated
-preferences and reopening with the defaults; the optional preview-only camera
-test additionally checks that the live engine switches back to default JSON.
-Build/lint, APK signing/alignment, native tests and the on-device synthetic
-workflow passed; code 13 is installed on the A26. The live camera view and a
-processed clip have not yet been visually checked with the revised defaults.
+For the built-in default, the app extends the source at its sides and bottom
+before processing, then returns the original frame bounds. This moves the
+filter-start stripe and bottom tracking/head-switching bands outside the visible
+picture while retaining the original framing and the preset's texture/movement.
+Both live preview and export use this path. Other imported JSON is processed
+without this border treatment. Original recordings remain clean and unchanged.
+
+Reset clears remembered imported JSON, filename and compatibility warnings;
+other camera preferences are preserved. Developer mode has the same button.
+Native tests check the returned picture against upstream processing of an
+explicitly extended frame. Native tests/Clippy, Android build/lint, signing/16KiB
+alignment and the on-device synthetic suite passed. Code 14 is installed; visual
+verification is waiting for the phone to be unlocked.
 
 ## Launcher icon (0.6.2)
 

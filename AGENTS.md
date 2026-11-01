@@ -274,3 +274,20 @@ alignment, and the default on-device synthetic suite passed. Code 13 is
 installed on the A26; the helper package was removed for user 0. No
 camera/microphone test or phone file browsing occurred. Visual comparison of
 live preview and processed export with the new default is still pending.
+
+Version 0.6.5 (code14), branch v0.6.5-frame-edges, reverts 0.6.4's preset
+parameter edits at the user's explicit request. DEFAULT_JSON is again exactly
+{"version":1}; head switching and edge wave retain the original legacy values.
+An authorized live-preview screenshot confirmed the unwanted bottom noisy band
+and side striped filter-start transient while the app-default label was active.
+The pinned upstream source explicitly notes the VHS zero-initialized filter's
+side line; tracking noise operates on bottom rows. Native.process adds cleanEdges,
+defaulting to true only for the exact built-in default JSON. This extends source
+pixels 64 columns on each side and 32 rows below, applies the actual unmodified
+core, and extracts the original frame bounds. No source FOV/zoom is lost; preview
+and export share the path. Other preset JSON retains the unpadded upstream path.
+Host tests compare padding/cropping with an explicit upstream frame reference;
+All nine native tests/Clippy, Android build/lint, signing/16KiB alignment and
+the on-device synthetic suite passed. Code 14 is installed and the helper test
+package removed for user 0. The screen fell asleep before the after screenshot;
+visual verification is waiting for the user to unlock it. No footage was recorded.

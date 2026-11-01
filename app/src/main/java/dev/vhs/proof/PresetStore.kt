@@ -9,8 +9,8 @@ import java.nio.charset.CharacterCodingException
 internal data class ImportedPreset(val json: String, val remembered: Boolean, val name: String, val warnings: String)
 
 internal object PresetStore {
-    const val DEFAULT_NAME = "VHS Camera defaults"
-    const val DEFAULT_JSON = "{\"version\":1,\"head_switching\":false,\"vhs_edge_wave_enabled\":false}"
+    const val DEFAULT_NAME = "ntsc-rs legacy defaults"
+    const val DEFAULT_JSON = "{\"version\":1}"
 
     fun reset(context: Context): ImportedPreset {
         val remembered = context.getSharedPreferences("vhs", Context.MODE_PRIVATE).edit()
