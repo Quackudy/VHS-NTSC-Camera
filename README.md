@@ -21,6 +21,15 @@ as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
 
+## Launcher icon (0.6.2)
+
+The launcher uses the user's workspace `app_image.jpg`: density-specific PNGs
+and an adaptive icon with a padded foreground and a matching cyan background.
+The original artwork remains unchanged. Icon resources and manifest wiring
+passed build/lint, APK signing/alignment and aapt resource checks; code 11 is
+installed on the A26. The effect/recording implementation is the tested 0.6.1
+code. A dedicated monochrome/themed-icon layer is not provided.
+
 ## Preset import fixes (0.6.1)
 
 Import now displays the source filename. Invalid files (including PDFs), bad UTF-8,

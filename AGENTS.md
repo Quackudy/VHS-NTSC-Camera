@@ -232,3 +232,15 @@ The two diagnostic presets and README are in docs/preset-checks and were already
 placed in phone Downloads/VHS-preset-checks before the privacy concern. Do not
 arbitrarily select them as the user's permanent preset. A subsequent user request
 asks to use workspace app_image.jpg as app icon after completing this preset fix.
+
+Version 0.6.2 (code11, branch v0.6.2-app-icon) follows verified/tagged v0.6.1.
+The user explicitly supplied workspace app_image.jpg and requested it as the app
+icon after preset fixing. It is a 1024-square duck/camcorder illustration. Use
+that original asset, not generated replacements. Legacy density launcher PNGs
+(48/72/96/144/192) and adaptive foreground432 (art264 centered) derive from it;
+background #3DBCE2 sampled from its corner. Manifest icon/roundIcon both reference
+mipmap/ic_launcher. Original source image is kept. Build/lint, signing/alignment,
+aapt icon-resource wiring passed; code11 installed on A26. No engine changes
+from the fully tested v0.6.1 checkpoint. Test package removed for user0. No new
+phone user-file browsing/reading occurred after the privacy boundary was set.
+The final supported preset state/settings were restored after fixture tests.

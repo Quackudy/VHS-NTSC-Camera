@@ -60,6 +60,10 @@ surfaces and focus/pressed feedback retain native platform treatments.
 
 ## Components
 
+The launcher uses the user-provided duck/camcorder artwork in `app_image.jpg`.
+Android density icons and the adaptive icon are resized/padded derivatives of
+that asset with a matching cyan background; they do not change camera chrome.
+
 Pause becomes Resume within the same recording. The timer freezes while paused.
 Settings and Gallery cannot interrupt an active or paused recording. The capture
 label distinguishes live effect from original preview. The footer explains that

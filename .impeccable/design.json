@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-01T05:58:33.773722+00:00",
+  "generatedAt": "2026-11-01T08:54:05.050905+00:00",
   "title": "Design System: VHS Camera",
   "extensions": {},
   "components": [],
@@ -11,7 +11,8 @@
       "Fitted 4:3 preview",
       "One circular record/stop action",
       "Explicit paused state",
-      "Native settings controls"
+      "Native settings controls",
+      "User-provided duck/camcorder launcher artwork"
     ],
     "rules": [
       {
