@@ -410,8 +410,8 @@ class ProofInstrumentation : Instrumentation() {
             await { resetScreen.isDestroyed }
             val reopened = launch()
             runOnMainSync {
-                check(field(reopened, "preset") == "{\"version\":1}")
-                check((field(reopened, "presetLabel") as android.widget.TextView).text == "Preset: ntsc-rs legacy defaults")
+                check(field(reopened, "preset") == PresetStore.DEFAULT_JSON)
+                check((field(reopened, "presetLabel") as android.widget.TextView).text == "Preset: ${PresetStore.DEFAULT_NAME}")
             }
             check(input.readBytes().contentEquals(originalBytes)) { "Export or cancellation changed the source" }
         } finally {
@@ -571,8 +571,8 @@ class ProofInstrumentation : Instrumentation() {
             }
             await { field("presetImporting") == false && field("configuring") == false && livePreset() == PresetStore.DEFAULT_JSON }
             for (key in listOf("preset", "presetName", "presetWarnings")) check(!preferences.contains(key))
-            runOnMainSync { check((field("presetLabel") as android.widget.TextView).text == "Preset: ntsc-rs legacy defaults") }
-            return "reset restored live defaults and cleared imported metadata; two imported presets reached live engine, including a deterministic import/configuration race; filename displayed; PDF visibly rejected, previous preset retained; no recording/microphone."
+            runOnMainSync { check((field("presetLabel") as android.widget.TextView).text == "Preset: ${PresetStore.DEFAULT_NAME}") }
+            return "reset restored VHS Camera defaults and cleared imported metadata; two imported presets reached live engine, including a deterministic import/configuration race; filename displayed; PDF visibly rejected, previous preset retained; no recording/microphone."
         } finally {
             runOnMainSync { camera.finish() }
             check(preferences.edit().putString("preset", previous).putString("presetName", previousName).putString("presetWarnings", previousWarnings).commit())

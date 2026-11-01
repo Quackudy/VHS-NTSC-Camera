@@ -287,6 +287,19 @@ mod tests {
     }
 
     #[test]
+    fn camera_default_only_disables_edge_glitches_from_legacy_defaults() {
+        let legacy = parse_preset(r#"{"version":1}"#).unwrap();
+        let mut expected = legacy;
+        expected.head_switching.enabled = false;
+        expected.vhs_settings.settings.edge_wave.enabled = false;
+        let camera_default = parse_preset(
+            r#"{"version":1,"head_switching":false,"vhs_edge_wave_enabled":false}"#,
+        )
+        .unwrap();
+        assert_eq!(camera_default, expected);
+    }
+
+    #[test]
     fn rejects_unsupported_and_unsafe_presets() {
         for json in [
             r#"{"version":2}"#,

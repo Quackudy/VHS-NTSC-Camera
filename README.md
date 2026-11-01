@@ -21,20 +21,22 @@ as a standalone task (for example from Recents). It now opens the processing
 screen itself if there is no activity-result recipient. The original remains
 in Gallery while the effected copy is exported automatically.
 
-## Reset preset (0.6.3)
+## Camera default look (0.6.4)
 
 In Camera **Settings**, tap **Reset preset to default** to return to the same
-ntsc-rs legacy defaults used before any import. Developer mode has the same
+ntsc-rs legacy look used before any import, with VHS head switching and edge
+wave turned off to remove the lower and side-edge glitches. Grain, color and
+other effect settings stay at the legacy values. Developer mode has the same
 button. This clears the remembered imported JSON, filename and compatibility
-warnings, applies `{"version":1}` to live preview and future exports, and keeps
+warnings, applies the app default to live preview and future exports, and keeps
 the default after restarting. Other camera preferences are preserved.
 
 The synthetic workflow test checks reset, cleared metadata, unchanged unrelated
 preferences and reopening with the defaults; the optional preview-only camera
 test additionally checks that the live engine switches back to default JSON.
-Build/lint, APK signing/alignment and the on-device synthetic reset workflow
-passed; code 12 is installed on the A26. The optional camera-preview reset check
-has not been run.
+Build/lint, APK signing/alignment, native tests and the on-device synthetic
+workflow passed; code 13 is installed on the A26. The live camera view and a
+processed clip have not yet been visually checked with the revised defaults.
 
 ## Launcher icon (0.6.2)
 

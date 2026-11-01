@@ -11,8 +11,8 @@ android {
         applicationId = "dev.vhs.proof"
         minSdk = 29
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.6.3-reset-preset"
+        versionCode = 13
+        versionName = "0.6.4-cleaner-default"
         testInstrumentationRunner = "dev.vhs.proof.ProofInstrumentation"
         ndk { abiFilters += "arm64-v8a" }
     }

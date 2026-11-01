@@ -260,3 +260,17 @@ including reset/reopen and unrelated-preference preservation. The optional
 camera-preview reset test has not run; the synthetic suite did not activate
 camera or microphone. The helper test package was removed for user 0. No phone
 files were browsed.
+
+Version 0.6.4 (code13), branch v0.6.4-cleaner-default, defines a VHS Camera
+default profile by starting from ntsc-rs legacy defaults and setting only
+head_switching=false and vhs_edge_wave_enabled=false. The former removes the
+head-switching tear at the bottom; the latter removes horizontal edge waviness.
+Other legacy grain/color/effect values are preserved. Reset and cold-launch
+fallback both use this profile; the UI labels it "VHS Camera defaults" to avoid
+misrepresenting it as the exact upstream preset. A Rust equality test checks the
+full parsed effect differs from upstream legacy defaults only in those two
+enabled flags. All nine native tests and Clippy, Android build/lint, APK signing/16KiB
+alignment, and the default on-device synthetic suite passed. Code 13 is
+installed on the A26; the helper package was removed for user 0. No
+camera/microphone test or phone file browsing occurred. Visual comparison of
+live preview and processed export with the new default is still pending.

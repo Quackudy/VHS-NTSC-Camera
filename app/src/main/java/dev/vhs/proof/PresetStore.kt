@@ -9,18 +9,19 @@ import java.nio.charset.CharacterCodingException
 internal data class ImportedPreset(val json: String, val remembered: Boolean, val name: String, val warnings: String)
 
 internal object PresetStore {
-    const val DEFAULT_JSON = "{\"version\":1}"
+    const val DEFAULT_NAME = "VHS Camera defaults"
+    const val DEFAULT_JSON = "{\"version\":1,\"head_switching\":false,\"vhs_edge_wave_enabled\":false}"
 
     fun reset(context: Context): ImportedPreset {
         val remembered = context.getSharedPreferences("vhs", Context.MODE_PRIVATE).edit()
             .remove("preset").remove("presetName").remove("presetWarnings").commit()
-        return ImportedPreset(DEFAULT_JSON, remembered, "ntsc-rs legacy defaults", "")
+        return ImportedPreset(DEFAULT_JSON, remembered, DEFAULT_NAME, "")
     }
 
     fun label(context: Context): String {
         val preferences = context.getSharedPreferences("vhs", Context.MODE_PRIVATE)
         val label = if (preferences.contains("preset")) "Preset: ${preferences.getString("presetName", "imported ntsc-rs preset")}" else
-            "Preset: ntsc-rs legacy defaults"
+            "Preset: $DEFAULT_NAME"
         val warnings = preferences.getString("presetWarnings", "").orEmpty()
         return if (warnings.isBlank()) label else "$label\n$warnings"
     }

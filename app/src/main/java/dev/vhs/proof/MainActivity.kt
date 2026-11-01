@@ -92,7 +92,7 @@ class MainActivity : Activity() {
                 val result = PresetStore.reset(this)
                 onUi {
                     preset = result.json
-                    presetLabel.text = "Preset: ntsc-rs legacy defaults"
+                    presetLabel.text = "Preset: ${result.name}"
                     clearResult()
                     status.text = if (result.remembered) "Preset reset to default." else "Default preset active, but saving the reset failed."
                 }
